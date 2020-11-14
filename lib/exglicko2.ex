@@ -6,6 +6,28 @@ defmodule Exglicko2 do
   @e 2.71828182845904523536028747135266249775724709369995
   @convergence_tolerance 0.000001
 
+  @doc """
+  Update a player's rating based on game results.
+
+  Each player is represented by a tuple of the player's rating, their rating deviation, and their rating volatility.
+  Game results are batched into a list of tuples, with the first element being the opponent's values,
+  and the second being the resulting score between zero and one.
+
+  Also requires a system constant, which represents how much ratings are allowed to change.
+  This value must be between 0.4 and 1.2
+
+  ## Example
+
+      iex> player = {1500, 200, 0.06}
+      iex> system_constant = 0.5
+      iex> results = [
+      ...>   {{1400, 30, 0}, 1},
+      ...>   {{1550, 100, 0}, 0},
+      ...>   {{1700, 300, 0}, 0}
+      ...> ]
+      iex> Exglicko2.update_rating(player, results, system_constant)
+      {1464.0506711471253, 151.51652284295207, 0.05999565709430874}
+  """
   def update_rating(player, results, system_constant) do
     {rating, deviation, volatility} = converted_player = Exglicko2.GlickoConversion.glicko_to_glicko2(player)
     converted_results = Enum.map(results, fn {player, score} ->
