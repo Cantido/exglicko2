@@ -13,8 +13,8 @@ defmodule Exglicko2Test do
 
     {rating, deviation, volatility} = Exglicko2.update_rating(player, results, system_constant)
 
-    assert rating == 1464.0506711471253
-    assert deviation == 151.51652284295207
-    assert volatility == 0.05999565709430874
+    assert_in_delta 1464.06, rating, 0.01
+    assert_in_delta 151.52, deviation, 0.01
+    assert_in_delta 0.05999, volatility, 0.0001
   end
 end
