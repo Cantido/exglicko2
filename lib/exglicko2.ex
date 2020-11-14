@@ -17,10 +17,13 @@ defmodule Exglicko2 do
       {glicko_to_glicko2(player), score(result)}
     end)
 
-    new_volatility = new_volatility(converted_player, converted_results, system_constant)
+    player_variance = variance(converted_player, converted_results)
+    player_improvement = improvement(converted_player, converted_results)
+
+    new_volatility = new_volatility(converted_player, player_variance, player_improvement, system_constant)
     new_pre_rating_deviation = :math.sqrt(square(deviation) + square(new_volatility))
 
-    new_deviation = 1 / :math.sqrt((1/square(new_pre_rating_deviation)) + (1 / volatility))
+    new_deviation = 1 / :math.sqrt((1/square(new_pre_rating_deviation)) + (1 / player_variance))
 
     new_rating = new_rating(converted_player, converted_results, new_deviation)
 
@@ -65,10 +68,7 @@ defmodule Exglicko2 do
     rating + square(new_deviation) * sum_term
   end
 
-  defp new_volatility({rating, deviation, volatility} = player, results, system_constant) do
-    player_variance = variance(player, results)
-    player_improvement = improvement(player, results)
-
+  defp new_volatility({rating, deviation, volatility} = player, player_variance, player_improvement, system_constant) do
     f = &new_volatility_inner_template(&1, rating, deviation, player_variance, volatility, system_constant)
 
     starting_lower_bound = ln(square(volatility))
@@ -116,8 +116,6 @@ defmodule Exglicko2 do
 
     (numerator / denominator) - ((x - a) / square(tau))
   end
-
-
 
   defp improvement({rating, deviation, volatility}, results) do
     sum = Enum.map(results, fn {{opponent_rating, opponent_deviation, _opponent_volatility}, score} ->
