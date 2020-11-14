@@ -1,6 +1,6 @@
 # Exglicko2
 
-**TODO: Add description**
+An implementation of the [Glicko-2 rating system](http://www.glicko.net/glicko/glicko2.pdf).
 
 ## Installation
 
@@ -18,4 +18,3 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/exglicko2](https://hexdocs.pm/exglicko2).
-
