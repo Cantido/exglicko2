@@ -6,9 +6,9 @@ defmodule Exglicko2Test do
     player = {1500, 200, 0.06}
     system_constant = 0.5
     results = [
-      {{1400, 30, 0}, :win},
-      {{1550, 100, 0}, :lose},
-      {{1700, 300, 0}, :lose}
+      {{1400, 30, 0}, 1},
+      {{1550, 100, 0}, 0},
+      {{1700, 300, 0}, 0}
     ]
 
     {rating, deviation, volatility} = Exglicko2.update_rating(player, results, system_constant)

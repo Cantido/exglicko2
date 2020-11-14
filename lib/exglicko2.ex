@@ -4,17 +4,12 @@ defmodule Exglicko2 do
   """
 
   @e 2.71828182845904523536028747135266249775724709369995
-  @conversion_factor 173.7178
   @convergence_tolerance 0.000001
 
-  @unrated_rating 1500
-  @unrated_deviation 350
-  @unrated_volatility 0.06
-
   def update_rating(player, results, system_constant) do
-    {rating, deviation, volatility} = converted_player = glicko_to_glicko2(player)
-    converted_results = Enum.map(results, fn {player, result} ->
-      {glicko_to_glicko2(player), score(result)}
+    {rating, deviation, volatility} = converted_player = Exglicko2.GlickoConversion.glicko_to_glicko2(player)
+    converted_results = Enum.map(results, fn {player, score} ->
+      {Exglicko2.GlickoConversion.glicko_to_glicko2(player), score}
     end)
 
     player_variance = variance(converted_player, converted_results)
@@ -27,30 +22,7 @@ defmodule Exglicko2 do
 
     new_rating = new_rating(converted_player, converted_results, new_deviation)
 
-    glicko2_to_glicko({new_rating, new_deviation, new_volatility})
-  end
-
-  defp glicko2_to_glicko({rating, deviation, volatility}) do
-    {
-      @conversion_factor * rating + @unrated_rating,
-      deviation * @conversion_factor,
-      volatility
-    }
-  end
-
-  defp glicko_to_glicko2({rating, deviation, volatility}) do
-    {
-      (rating - @unrated_rating)/@conversion_factor,
-      deviation/@conversion_factor,
-      volatility
-    }
-  end
-
-  defp glicko_to_glicko2({rating, deviation}) do
-    {
-      (rating - @unrated_rating)/@conversion_factor,
-      deviation/@conversion_factor,
-    }
+    Exglicko2.GlickoConversion.glicko2_to_glicko({new_rating, new_deviation, new_volatility})
   end
 
   def score(:win), do: 1
