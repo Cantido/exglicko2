@@ -47,10 +47,6 @@ defmodule Exglicko2 do
     Exglicko2.GlickoConversion.glicko2_to_glicko({new_rating, new_deviation, new_volatility})
   end
 
-  def score(:win), do: 1
-  def score(:draw), do: 0.5
-  def score(:lose), do: 0
-
   defp new_rating({rating, _deviation, _volatility}, results, new_deviation) do
     sum_term =
       results
