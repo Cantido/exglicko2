@@ -27,6 +27,10 @@ defmodule Exglicko2 do
       ...> ]
       iex> Exglicko2.update_rating(player, results, system_constant)
       {1464.0506711471253, 151.51652284295207, 0.05999565709430874}
+
+  Some convenience functions are also present in this module.
+  The functions `rating/1`, `deviation/1`, and `volatility/1` access the corresponding value of a rating tuple,
+  so you don't have to keep accessing a "magic tuple position" in your code.
   """
 
   @e 2.71828182845904523536028747135266249775724709369995
@@ -38,6 +42,36 @@ defmodule Exglicko2 do
   def new do
     {1500, 350, 0.06}
   end
+
+  @doc """
+  Returns the rating value of a rating tuple.
+
+  ## Examples
+
+      iex> Exglicko2.rating({1500, 350, 0.06})
+      1500
+  """
+  def rating({r, _d, _v}), do: r
+
+  @doc """
+  Returns the deviation value of a rating tuple.
+
+  ## Examples
+
+      iex> Exglicko2.deviation({1500, 350, 0.06})
+      350
+  """
+  def deviation({_r, d, _v}), do: d
+
+  @doc """
+  Returns the volatility value of a rating tuple.
+
+  ## Examples
+
+      iex> Exglicko2.volatility({1500, 350, 0.06})
+      0.06
+  """
+  def volatility({_r, _d, v}), do: v
 
   @doc """
   Update a player's rating based on game results.
