@@ -7,6 +7,13 @@ defmodule Exglicko2 do
   @convergence_tolerance 0.000001
 
   @doc """
+  Returns a new `{rating, deviation, volatility}` tuple, suited to new players.
+  """
+  def new do
+    {1500, 350, 0.06}
+  end
+
+  @doc """
   Update a player's rating based on game results.
 
   Each player is represented by a tuple of the player's rating, their rating deviation, and their rating volatility.
