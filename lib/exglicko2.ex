@@ -1,6 +1,32 @@
 defmodule Exglicko2 do
   @moduledoc """
-  Documentation for Exglicko2.
+  Tools for working with Glicko-2 ratings.
+
+  Ratings are represented by a tuple of the rating, the rating deviation, and the rating volatility.
+  You can get a new, default tuple with the `new/0` function.
+
+      iex> Exglicko2.new()
+      {1500, 350, 0.06}
+
+  Once your players have ratings, the games can begin!
+  Game results are represented by a number ranging from zero to one,
+  with a one representing a win, and a zero representing a loss.
+
+  Ratings are updated with a list of game results passed to the `update_rating/3` function.
+  Game results are batched into a list of tuples, with the first element being the opponent's rating tuple,
+  and the second being the resulting score.
+  This function also requires a system constant, which governs how much ratings are allowed to change.
+  This value must be between 0.4 and 1.2
+
+      iex> player = {1500, 200, 0.06}
+      iex> system_constant = 0.5
+      iex> results = [
+      ...>   {{1400, 30, 0}, 1},
+      ...>   {{1550, 100, 0}, 0},
+      ...>   {{1700, 300, 0}, 0}
+      ...> ]
+      iex> Exglicko2.update_rating(player, results, system_constant)
+      {1464.0506711471253, 151.51652284295207, 0.05999565709430874}
   """
 
   @e 2.71828182845904523536028747135266249775724709369995
@@ -20,10 +46,17 @@ defmodule Exglicko2 do
   Game results are batched into a list of tuples, with the first element being the opponent's values,
   and the second being the resulting score between zero and one.
 
-  Also requires a system constant, which represents how much ratings are allowed to change.
+  Also requires a system constant, which governs how much ratings are allowed to change.
   This value must be between 0.4 and 1.2
 
   ## Example
+
+  A player with a rating of 1500, a deviation of 200, and a volatility of 0.06 plays three games.
+  - Against the first opponent, with a rating of 1400, they win. Thus the score is 1.
+  - Against the second opponent, with a rating of 1550, they lose. Thus the score is 0.
+  - Against the third opponent, with a rating of 1700, they lose again. Thus the score is 0.
+
+  The result is that the player's score drops to 1464, their deviation drops to 152, and their volatility drops slightly.
 
       iex> player = {1500, 200, 0.06}
       iex> system_constant = 0.5
