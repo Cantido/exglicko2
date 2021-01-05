@@ -4,10 +4,20 @@ defmodule Exglicko2.MixProject do
   def project do
     [
       app: :exglicko2,
+      description: "An implementation of the Glicko-2 rating system.",
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
+      package: package(),
       deps: deps()
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["Rosa Richter"],
+      licenses: ["MIT"],
+      links: %{"Github" => "https://github.com/Cantido/exglicko2"}
     ]
   end
 
