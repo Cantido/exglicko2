@@ -28,6 +28,13 @@ defmodule Exglicko2 do
       iex> Exglicko2.update_rating(player, results, system_constant)
       {-0.21522518921916625, 0.8943062104659615, 0.059995829968027437}
 
+  Here is some guidance on the optimal number of games to pass into the `update_rating/3` function,
+  directly from the original paper:
+
+  > The Glicko-2 system works best when the number of games in a rating period is moderate to large,
+  > say an average of at least 10-15 games per player in a rating period.
+  > The length of time for a rating period is at the discretion of the administrator.
+
   Some convenience functions are also present in this module.
   The functions `rating/1`, `deviation/1`, and `volatility/1` access the corresponding value of a rating tuple,
   so you don't have to keep accessing a "magic tuple position" in your code.
