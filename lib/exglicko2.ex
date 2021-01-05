@@ -6,7 +6,7 @@ defmodule Exglicko2 do
   You can get a new, default tuple with the `new/0` function.
 
       iex> Exglicko2.new()
-      {1500, 350, 0.06}
+      {0.0, 2.0, 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,
@@ -18,19 +18,25 @@ defmodule Exglicko2 do
   This function also requires a system constant, which governs how much ratings are allowed to change.
   This value must be between 0.4 and 1.2
 
-      iex> player = {1500, 200, 0.06}
+      iex> player = {0.0, 1.2, 0.06}
       iex> system_constant = 0.5
       iex> results = [
-      ...>   {{1400, 30, 0}, 1},
-      ...>   {{1550, 100, 0}, 0},
-      ...>   {{1700, 300, 0}, 0}
+      ...>   {{-0.6, 0.2, 0}, 1},
+      ...>   {{0.3, 0.6, 0}, 0},
+      ...>   {{1.2, 1.7, 0}, 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, system_constant)
-      {1464.0506711471253, 151.51652284295207, 0.05999565709430874}
+      {-0.21522518921916625, 0.8943062104659615, 0.059995829968027437}
 
   Some convenience functions are also present in this module.
   The functions `rating/1`, `deviation/1`, and `volatility/1` access the corresponding value of a rating tuple,
   so you don't have to keep accessing a "magic tuple position" in your code.
+
+  If you use the older Glicko rating system,
+  use the `Exglicko2.Conversion` module to convert between the old and new systems.
+
+      iex> Exglicko2.Conversion.glicko_to_glicko2({1500.0, 350, 0.06})
+      {0.0, 2.014761872416068, 0.06}
   """
 
   @e 2.71828182845904523536028747135266249775724709369995
@@ -40,7 +46,7 @@ defmodule Exglicko2 do
   Returns a new `{rating, deviation, volatility}` tuple, suited to new players.
   """
   def new do
-    {1500, 350, 0.06}
+    {0.0, 2.0, 0.06}
   end
 
   @doc """
@@ -48,8 +54,8 @@ defmodule Exglicko2 do
 
   ## Examples
 
-      iex> Exglicko2.rating({1500, 350, 0.06})
-      1500
+      iex> Exglicko2.rating({0.0, 2.0, 0.06})
+      0.0
   """
   def rating({r, _d, _v}), do: r
 
@@ -58,8 +64,8 @@ defmodule Exglicko2 do
 
   ## Examples
 
-      iex> Exglicko2.deviation({1500, 350, 0.06})
-      350
+      iex> Exglicko2.deviation({0.0, 2.0, 0.06})
+      2.0
   """
   def deviation({_r, d, _v}), do: d
 
@@ -68,7 +74,7 @@ defmodule Exglicko2 do
 
   ## Examples
 
-      iex> Exglicko2.volatility({1500, 350, 0.06})
+      iex> Exglicko2.volatility({0.0, 2.0, 0.06})
       0.06
   """
   def volatility({_r, _d, v}), do: v
@@ -85,40 +91,35 @@ defmodule Exglicko2 do
 
   ## Example
 
-  A player with a rating of 1500, a deviation of 200, and a volatility of 0.06 plays three games.
-  - Against the first opponent, with a rating of 1400, they win. Thus the score is 1.
-  - Against the second opponent, with a rating of 1550, they lose. Thus the score is 0.
-  - Against the third opponent, with a rating of 1700, they lose again. Thus the score is 0.
+  A player with a rating of 0.0, a deviation of 1.2, and a volatility of 0.06 plays three games.
+  - Against the first opponent, they win. Thus the score is 1.
+  - Against the second opponent, they lose. Thus the score is 0.
+  - Against the third opponent, they lose again. Thus the score is 0.
 
-  The result is that the player's score drops to 1464, their deviation drops to 152, and their volatility drops slightly.
+  The result is that the player's score drops to -0.2, their deviation drops to 0.9, and their volatility drops slightly.
 
-      iex> player = {1500, 200, 0.06}
+      iex> player = {0.0, 1.2, 0.06}
       iex> system_constant = 0.5
       iex> results = [
-      ...>   {{1400, 30, 0}, 1},
-      ...>   {{1550, 100, 0}, 0},
-      ...>   {{1700, 300, 0}, 0}
+      ...>   {{-0.6, 0.2, 0}, 1},
+      ...>   {{0.3, 0.6, 0}, 0},
+      ...>   {{1.2, 1.7, 0}, 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, system_constant)
-      {1464.0506711471253, 151.51652284295207, 0.05999565709430874}
+      {-0.21522518921916625, 0.8943062104659615, 0.059995829968027437}
   """
-  def update_rating(player, results, system_constant) do
-    {_rating, deviation, _volatility} = converted_player = Exglicko2.GlickoConversion.glicko_to_glicko2(player)
-    converted_results = Enum.map(results, fn {player, score} ->
-      {Exglicko2.GlickoConversion.glicko_to_glicko2(player), score}
-    end)
+  def update_rating({_r, deviation, _v} = player, results, system_constant) do
+    player_variance = variance(player, results)
+    player_improvement = improvement(player, results)
 
-    player_variance = variance(converted_player, converted_results)
-    player_improvement = improvement(converted_player, converted_results)
-
-    new_volatility = new_volatility(converted_player, player_variance, player_improvement, system_constant)
+    new_volatility = new_volatility(player, player_variance, player_improvement, system_constant)
     new_pre_rating_deviation = :math.sqrt(square(deviation) + square(new_volatility))
 
     new_deviation = 1 / :math.sqrt((1/square(new_pre_rating_deviation)) + (1 / player_variance))
 
-    new_rating = new_rating(converted_player, converted_results, new_deviation)
+    new_rating = new_rating(player, results, new_deviation)
 
-    Exglicko2.GlickoConversion.glicko2_to_glicko({new_rating, new_deviation, new_volatility})
+    {new_rating, new_deviation, new_volatility}
   end
 
   defp new_rating({rating, _deviation, _volatility}, results, new_deviation) do

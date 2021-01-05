@@ -1,4 +1,4 @@
-defmodule Exglicko2.GlickoConversion do
+defmodule Exglicko2.Conversion do
   @moduledoc """
   Converts between Glicko and Glicko-2 ratings.
   """
@@ -8,6 +8,11 @@ defmodule Exglicko2.GlickoConversion do
 
   @doc """
   Converts a Glicko-2 rating tuple into a Glicko rating tuple.
+
+  ## Examples
+
+      iex> Exglicko2.Conversion.glicko2_to_glicko({0.0, 1.2, 0.06})
+      {1500.0, 208.46136, 0.06}
   """
   def glicko2_to_glicko({rating, deviation, volatility}) do
     {
@@ -19,6 +24,11 @@ defmodule Exglicko2.GlickoConversion do
 
   @doc """
   Converts a Glicko rating tuple into a Glicko-2 rating tuple.
+
+  ## Examples
+
+      iex> Exglicko2.Conversion.glicko_to_glicko2({1500.0, 350, 0.06})
+      {0.0, 2.014761872416068, 0.06}
   """
   def glicko_to_glicko2({rating, deviation, volatility}) do
     {
