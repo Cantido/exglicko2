@@ -17,8 +17,8 @@ defmodule Exglicko2.Rating do
   """
   def composite(players) when is_list(players) do
     %__MODULE__{
-      rating: Enum.map(players, & &1.rating) |> mean()
-      deviation: Enum.map(players, & &1.deviation) |> mean()
+      rating: Enum.map(players, & &1.rating) |> mean(),
+      deviation: Enum.map(players, & &1.deviation) |> mean(),
       volatility: Enum.map(players, & &1.volatility) |> mean()
     }
   end

@@ -15,17 +15,16 @@ defmodule Exglicko2 do
   Ratings are updated with a list of game results passed to the `update_rating/3` function.
   Game results are batched into a list of tuples, with the first element being the opponent's rating tuple,
   and the second being the resulting score.
-  This function also requires a system constant, which governs how much ratings are allowed to change.
-  This value must be between 0.4 and 1.2
+  This function also accepts an optional system constant, which governs how much ratings are allowed to change.
+  This value must be between 0.4 and 1.2, and is 0.5 by default.
 
       iex> player = Exglicko2.new(0.0, 1.2, 0.06)
-      iex> system_constant = 0.5
       iex> results = [
       ...>   {Exglicko2.new(-0.6, 0.2, 0), 1},
       ...>   {Exglicko2.new(0.3, 0.6, 0), 0},
       ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
-      iex> Exglicko2.update_rating(player, results, system_constant)
+      iex> Exglicko2.update_rating(player, results, tau: 0.5)
       %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
 
   Here is some guidance on the optimal number of games to pass into the `update_rating/3` function,

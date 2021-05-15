@@ -4,7 +4,6 @@ defmodule Exglicko2Test do
 
   test "example game from the original paper" do
     player = Exglicko2.Conversion.glicko_to_glicko2({1500, 200, 0.06})
-    system_constant = 0.5
     results = [
       {{1400, 30, 0}, 1},
       {{1550, 100, 0}, 0},
@@ -15,7 +14,7 @@ defmodule Exglicko2Test do
     end)
 
 
-    {rating, deviation, volatility} = Exglicko2.update_rating(player, results, system_constant) |> Exglicko2.Conversion.glicko2_to_glicko()
+    {rating, deviation, volatility} = Exglicko2.update_rating(player, results) |> Exglicko2.Conversion.glicko2_to_glicko()
 
     assert_in_delta 1464.06, rating, 0.01
     assert_in_delta 151.52, deviation, 0.01
