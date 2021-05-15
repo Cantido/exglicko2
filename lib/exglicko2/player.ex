@@ -6,6 +6,8 @@ defmodule Exglicko2.Player do
 
   @e 2.71828182845904523536028747135266249775724709369995
   @convergence_tolerance 0.000001
+  @glicko_conversion_factor 173.7178
+  @unrated_glicko_rating 1500
 
   @enforce_keys [
     :rating,
@@ -17,23 +19,6 @@ defmodule Exglicko2.Player do
     :deviation,
     :volatility
   ]
-
-  @doc """
-  Creates a "composite player" from the given enumerable of ratings.
-
-  The resulting player will have a rating, deviation, and volatility that is the average of all given players.
-  """
-  def composite(players) when is_list(players) do
-    %__MODULE__{
-      rating: Enum.map(players, & &1.rating) |> mean(),
-      deviation: Enum.map(players, & &1.deviation) |> mean(),
-      volatility: Enum.map(players, & &1.volatility) |> mean()
-    }
-  end
-
-  defp mean(values) when is_list(values) do
-    Enum.sum(values) / Enum.count(values)
-  end
 
   @doc """
   Returns a new `Exglicko2.Player` suited to new players.
@@ -55,6 +40,56 @@ defmodule Exglicko2.Player do
       deviation: deviation,
       volatility: volatility
     }
+  end
+
+  @doc """
+  Get the first-generation Glicko rating of a player.
+
+  ## Examples
+
+      iex> Exglicko2.Player.new(0.0, 1.2, 0.06)
+      ...> |> Exglicko2.Player.to_glicko()
+      {1500.0, 208.46136, 0.06}
+  """
+  def to_glicko(%__MODULE__{rating: rating, deviation: deviation, volatility: volatility}) do
+    {
+      @glicko_conversion_factor * rating + @unrated_glicko_rating,
+      deviation * @glicko_conversion_factor,
+      volatility
+    }
+  end
+
+  @doc """
+  Creates a player from a first-generation Glicko rating.
+
+  ## Examples
+
+      iex> Exglicko2.Player.from_glicko({1500.0, 350, 0.06})
+      %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+  """
+  def from_glicko({rating, deviation, volatility}) do
+    new(
+      (rating - @unrated_glicko_rating)/@glicko_conversion_factor,
+      deviation/@glicko_conversion_factor,
+      volatility
+    )
+  end
+
+  @doc """
+  Creates a "composite player" from the given enumerable of ratings.
+
+  The resulting player will have a rating, deviation, and volatility that is the average of all given players.
+  """
+  def composite(players) when is_list(players) do
+    %__MODULE__{
+      rating: Enum.map(players, & &1.rating) |> mean(),
+      deviation: Enum.map(players, & &1.deviation) |> mean(),
+      volatility: Enum.map(players, & &1.volatility) |> mean()
+    }
+  end
+
+  defp mean(values) when is_list(values) do
+    Enum.sum(values) / Enum.count(values)
   end
 
   @doc """

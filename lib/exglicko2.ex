@@ -35,9 +35,9 @@ defmodule Exglicko2 do
   > The length of time for a rating period is at the discretion of the administrator.
 
   If you use the older Glicko rating system,
-  use the `Exglicko2.Conversion` module to convert between the old and new systems.
+  you can convert a player back-and-forth using the `Exglicko2.Player.from_glicko/1` and `Exglicko2.Player.to_glicko/1` functions.
 
-      iex> Exglicko2.Conversion.glicko_to_glicko2({1500.0, 350, 0.06})
+      iex> Exglicko2.Player.from_glicko({1500.0, 350, 0.06})
       %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
 end
