@@ -13,7 +13,7 @@ defmodule Exglicko2.Conversion do
 
   ## Examples
 
-      iex> Exglicko2.Conversion.glicko2_to_glicko(Exglicko2.new(0.0, 1.2, 0.06))
+      iex> Exglicko2.Conversion.glicko2_to_glicko(Exglicko2.Player.new(0.0, 1.2, 0.06))
       {1500.0, 208.46136, 0.06}
   """
   def glicko2_to_glicko(%Player{rating: rating, deviation: deviation, volatility: volatility}) do
@@ -33,7 +33,7 @@ defmodule Exglicko2.Conversion do
       %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
   def glicko_to_glicko2({rating, deviation, volatility}) do
-    Exglicko2.new(
+    Player.new(
       (rating - @unrated_rating)/@conversion_factor,
       deviation/@conversion_factor,
       volatility

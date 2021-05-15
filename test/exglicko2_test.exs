@@ -14,7 +14,7 @@ defmodule Exglicko2Test do
     end)
 
 
-    {rating, deviation, volatility} = Exglicko2.update_rating(player, results) |> Exglicko2.Conversion.glicko2_to_glicko()
+    {rating, deviation, volatility} = Exglicko2.Player.update_rating(player, results) |> Exglicko2.Conversion.glicko2_to_glicko()
 
     assert_in_delta 1464.06, rating, 0.01
     assert_in_delta 151.52, deviation, 0.01
