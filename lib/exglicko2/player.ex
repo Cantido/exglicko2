@@ -123,6 +123,10 @@ defmodule Exglicko2.Player do
   def update_rating(%__MODULE__{deviation: deviation} = player, results, opts \\ []) do
     system_constant = Keyword.get(opts, :tau, 0.5)
 
+    if not is_number(system_constant) or system_constant < 0.4 or system_constant > 1.2 do
+      raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect system_constant}"
+    end
+
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)
 
