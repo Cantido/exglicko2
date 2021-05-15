@@ -2,11 +2,11 @@ defmodule Exglicko2 do
   @moduledoc """
   Tools for working with Glicko-2 ratings.
 
-  Ratings are represented by a tuple of the rating, the rating deviation, and the rating volatility.
-  You can get a new, default tuple with the `new/0` function.
+  Ratings are represented by a `Exglicko2.Rating` struct.
+  You can get a new, default struct with the `new/0` function.
 
       iex> Exglicko2.new()
-      {0.0, 2.0, 0.06}
+      %Exglicko2.Rating{rating: 0.0, deviation: 2.0, volatility: 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,
@@ -18,15 +18,15 @@ defmodule Exglicko2 do
   This function also requires a system constant, which governs how much ratings are allowed to change.
   This value must be between 0.4 and 1.2
 
-      iex> player = {0.0, 1.2, 0.06}
+      iex> player = Exglicko2.new(0.0, 1.2, 0.06)
       iex> system_constant = 0.5
       iex> results = [
-      ...>   {{-0.6, 0.2, 0}, 1},
-      ...>   {{0.3, 0.6, 0}, 0},
-      ...>   {{1.2, 1.7, 0}, 0}
+      ...>   {Exglicko2.new(-0.6, 0.2, 0), 1},
+      ...>   {Exglicko2.new(0.3, 0.6, 0), 0},
+      ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, system_constant)
-      {-0.21522518921916625, 0.8943062104659615, 0.059995829968027437}
+      %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
 
   Here is some guidance on the optimal number of games to pass into the `update_rating/3` function,
   directly from the original paper:
@@ -35,56 +35,39 @@ defmodule Exglicko2 do
   > say an average of at least 10-15 games per player in a rating period.
   > The length of time for a rating period is at the discretion of the administrator.
 
-  Some convenience functions are also present in this module.
-  The functions `rating/1`, `deviation/1`, and `volatility/1` access the corresponding value of a rating tuple,
-  so you don't have to keep accessing a "magic tuple position" in your code.
-
   If you use the older Glicko rating system,
   use the `Exglicko2.Conversion` module to convert between the old and new systems.
 
       iex> Exglicko2.Conversion.glicko_to_glicko2({1500.0, 350, 0.06})
-      {0.0, 2.014761872416068, 0.06}
+      %Exglicko2.Rating{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
+
+  alias Exglicko2.Rating
 
   @e 2.71828182845904523536028747135266249775724709369995
   @convergence_tolerance 0.000001
 
   @doc """
-  Returns a new `{rating, deviation, volatility}` tuple, suited to new players.
+  Returns a new `Exglicko2.Rating` suited to new players.
   """
   def new do
-    {0.0, 2.0, 0.06}
+    %Rating{
+      rating: 0.0,
+      deviation: 2.0,
+      volatility: 0.06
+    }
   end
 
   @doc """
-  Returns the rating value of a rating tuple.
-
-  ## Examples
-
-      iex> Exglicko2.rating({0.0, 2.0, 0.06})
-      0.0
+  Returns a new `Exglicko2.Rating` with the given values.
   """
-  def rating({r, _d, _v}), do: r
-
-  @doc """
-  Returns the deviation value of a rating tuple.
-
-  ## Examples
-
-      iex> Exglicko2.deviation({0.0, 2.0, 0.06})
-      2.0
-  """
-  def deviation({_r, d, _v}), do: d
-
-  @doc """
-  Returns the volatility value of a rating tuple.
-
-  ## Examples
-
-      iex> Exglicko2.volatility({0.0, 2.0, 0.06})
-      0.06
-  """
-  def volatility({_r, _d, v}), do: v
+  def new(rating, deviation, volatility) do
+    %Rating{
+      rating: rating,
+      deviation: deviation,
+      volatility: volatility
+    }
+  end
 
   @doc """
   Update a player's rating based on game results.
@@ -105,17 +88,17 @@ defmodule Exglicko2 do
 
   The result is that the player's score drops to -0.2, their deviation drops to 0.9, and their volatility drops slightly.
 
-      iex> player = {0.0, 1.2, 0.06}
+      iex> player = Exglicko2.new(0.0, 1.2, 0.06)
       iex> system_constant = 0.5
       iex> results = [
-      ...>   {{-0.6, 0.2, 0}, 1},
-      ...>   {{0.3, 0.6, 0}, 0},
-      ...>   {{1.2, 1.7, 0}, 0}
+      ...>   {Exglicko2.new(-0.6, 0.2, 0), 1},
+      ...>   {Exglicko2.new(0.3, 0.6, 0), 0},
+      ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, system_constant)
-      {-0.21522518921916625, 0.8943062104659615, 0.059995829968027437}
+      %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
   """
-  def update_rating({_r, deviation, _v} = player, results, system_constant) do
+  def update_rating(%Rating{deviation: deviation} = player, results, system_constant) do
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)
 
@@ -126,21 +109,21 @@ defmodule Exglicko2 do
 
     new_rating = new_rating(player, results, new_deviation)
 
-    {new_rating, new_deviation, new_volatility}
+    new(new_rating, new_deviation, new_volatility)
   end
 
-  defp new_rating({rating, _deviation, _volatility}, results, new_deviation) do
+  defp new_rating(%Rating{rating: rating}, results, new_deviation) do
     sum_term =
       results
-      |> Enum.map(fn {{opponent_rating, opponent_deviation, _opponent_volatility}, score} ->
-        g(opponent_deviation) * (score - e(rating, opponent_rating, opponent_deviation))
+      |> Enum.map(fn {opponent, score} ->
+        g(opponent.deviation) * (score - e(rating, opponent.rating, opponent.deviation))
       end)
       |> Enum.sum()
 
     rating + square(new_deviation) * sum_term
   end
 
-  defp new_volatility({rating, deviation, volatility}, player_variance, player_improvement, system_constant) do
+  defp new_volatility(%Rating{rating: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
     f = &new_volatility_inner_template(&1, rating, deviation, player_variance, volatility, system_constant)
 
     starting_lower_bound = ln(square(volatility))
@@ -189,20 +172,20 @@ defmodule Exglicko2 do
     (numerator / denominator) - ((x - a) / square(tau))
   end
 
-  defp improvement({rating, deviation, volatility}, results) do
-    sum = Enum.map(results, fn {{opponent_rating, opponent_deviation, _opponent_volatility}, score} ->
-      g(opponent_deviation) * (score - e(rating, opponent_rating, opponent_deviation))
+  defp improvement(player, results) do
+    sum = Enum.map(results, fn {opponent, score} ->
+      g(opponent.deviation) * (score - e(player.rating, opponent.rating, opponent.deviation))
     end)
     |> Enum.sum()
 
-    sum * variance({rating, deviation, volatility}, results)
+    sum * variance(player, results)
   end
 
-  defp variance({rating, _deviation, _volatility}, results) do
-    sum = Enum.map(results, fn {{opponent_rating, opponent_deviation, _opponent_volatility}, _score} ->
-      square(g(opponent_deviation)) *
-        e(rating, opponent_rating, opponent_deviation) *
-        (1 - e(rating, opponent_rating, opponent_deviation))
+  defp variance(%Rating{rating: rating}, results) do
+    sum = Enum.map(results, fn {opponent, _score} ->
+      square(g(opponent.deviation)) *
+        e(rating, opponent.rating, opponent.deviation) *
+        (1 - e(rating, opponent.rating, opponent.deviation))
     end)
     |> Enum.sum()
 
