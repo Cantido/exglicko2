@@ -1,4 +1,4 @@
-defmodule Exglicko2.RatingTest do
+defmodule Exglicko2.PlayerTest do
   use ExUnit.Case
-  doctest Exglicko2.Rating
+  doctest Exglicko2.Player
 end

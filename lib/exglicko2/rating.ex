@@ -1,4 +1,4 @@
-defmodule Exglicko2.Rating do
+defmodule Exglicko2.Player do
   @enforce_keys [
     :rating,
     :deviation,

@@ -2,11 +2,11 @@ defmodule Exglicko2 do
   @moduledoc """
   Tools for working with Glicko-2 ratings.
 
-  Ratings are represented by a `Exglicko2.Rating` struct.
+  Players are represented by a `Exglicko2.Player` struct.
   You can get a new, default struct with the `new/0` function.
 
       iex> Exglicko2.new()
-      %Exglicko2.Rating{rating: 0.0, deviation: 2.0, volatility: 0.06}
+      %Exglicko2.Player{rating: 0.0, deviation: 2.0, volatility: 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,
@@ -25,7 +25,7 @@ defmodule Exglicko2 do
       ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, tau: 0.5)
-      %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
+      %Exglicko2.Player{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
 
   Here is some guidance on the optimal number of games to pass into the `update_rating/3` function,
   directly from the original paper:
@@ -38,19 +38,19 @@ defmodule Exglicko2 do
   use the `Exglicko2.Conversion` module to convert between the old and new systems.
 
       iex> Exglicko2.Conversion.glicko_to_glicko2({1500.0, 350, 0.06})
-      %Exglicko2.Rating{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+      %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
 
-  alias Exglicko2.Rating
+  alias Exglicko2.Player
 
   @e 2.71828182845904523536028747135266249775724709369995
   @convergence_tolerance 0.000001
 
   @doc """
-  Returns a new `Exglicko2.Rating` suited to new players.
+  Returns a new `Exglicko2.Player` suited to new players.
   """
   def new do
-    %Rating{
+    %Player{
       rating: 0.0,
       deviation: 2.0,
       volatility: 0.06
@@ -58,10 +58,10 @@ defmodule Exglicko2 do
   end
 
   @doc """
-  Returns a new `Exglicko2.Rating` with the given values.
+  Returns a new `Exglicko2.Player` with the given values.
   """
   def new(rating, deviation, volatility) do
-    %Rating{
+    %Player{
       rating: rating,
       deviation: deviation,
       volatility: volatility
@@ -94,9 +94,9 @@ defmodule Exglicko2 do
       ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
       iex> Exglicko2.update_rating(player, results, tau: 0.5)
-      %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
+      %Exglicko2.Player{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
   """
-  def update_rating(%Rating{deviation: deviation} = player, results, opts \\ []) do
+  def update_rating(%Player{deviation: deviation} = player, results, opts \\ []) do
     system_constant = Keyword.get(opts, :tau, 0.5)
 
     player_variance = variance(player, results)
@@ -112,7 +112,7 @@ defmodule Exglicko2 do
     new(new_rating, new_deviation, new_volatility)
   end
 
-  defp new_rating(%Rating{rating: rating}, results, new_deviation) do
+  defp new_rating(%Player{rating: rating}, results, new_deviation) do
     sum_term =
       results
       |> Enum.map(fn {opponent, score} ->
@@ -123,7 +123,7 @@ defmodule Exglicko2 do
     rating + square(new_deviation) * sum_term
   end
 
-  defp new_volatility(%Rating{rating: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
+  defp new_volatility(%Player{rating: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
     f = &new_volatility_inner_template(&1, rating, deviation, player_variance, volatility, system_constant)
 
     starting_lower_bound = ln(square(volatility))
@@ -181,7 +181,7 @@ defmodule Exglicko2 do
     sum * variance(player, results)
   end
 
-  defp variance(%Rating{rating: rating}, results) do
+  defp variance(%Player{rating: rating}, results) do
     sum = Enum.map(results, fn {opponent, _score} ->
       square(g(opponent.deviation)) *
         e(rating, opponent.rating, opponent.deviation) *
