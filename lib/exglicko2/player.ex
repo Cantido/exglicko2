@@ -77,15 +77,22 @@ defmodule Exglicko2.Player do
 
   @doc """
   Creates a "composite player" from the given enumerable of ratings.
-
   The resulting player will have a rating, deviation, and volatility that is the average of all given players.
+
+  Also accepts a single player, in which case that player is returned.
   """
+  def composite(players)
+
   def composite(players) when is_list(players) do
     %__MODULE__{
       rating: Enum.map(players, & &1.rating) |> mean(),
       deviation: Enum.map(players, & &1.deviation) |> mean(),
       volatility: Enum.map(players, & &1.volatility) |> mean()
     }
+  end
+
+  def composite(%__MODULE__{} = player) do
+    player
   end
 
   defp mean(values) when is_list(values) do
@@ -113,20 +120,78 @@ defmodule Exglicko2.Player do
 
       iex> player = Exglicko2.Player.new(0.0, 1.2, 0.06)
       iex> results = [
-      ...>   {Exglicko2.Player.new(-0.6, 0.2, 0), 1},
-      ...>   {Exglicko2.Player.new(0.3, 0.6, 0), 0},
-      ...>   {Exglicko2.Player.new(1.2, 1.7, 0), 0}
+      ...>   {Exglicko2.Player.new(-0.6, 0.2, 0.06), 1},
+      ...>   {Exglicko2.Player.new(0.3, 0.6, 0.06), 0},
+      ...>   {Exglicko2.Player.new(1.2, 1.7, 0.06), 0}
       ...> ]
       iex> Exglicko2.Player.update_rating(player, results, tau: 0.5)
       %Exglicko2.Player{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
   """
-  def update_rating(%__MODULE__{deviation: deviation} = player, results, opts \\ []) do
+  def update_rating(%__MODULE__{} = player, results, opts \\ []) do
     system_constant = Keyword.get(opts, :tau, 0.5)
 
     if not is_number(system_constant) or system_constant < 0.4 or system_constant > 1.2 do
       raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect system_constant}"
     end
 
+    update_single_player(player, results, system_constant)
+  end
+
+  @doc """
+  Updates a whole team of players with `update_rating/3`.
+
+  Instead of individual player structs, pass in lists of players, like this:
+
+      iex> team_one = [
+      ...>   Exglicko2.Player.new(-0.6, 0.2, 0.06),
+      ...>   Exglicko2.Player.new(0.3, 0.6, 0.06),
+      ...>   Exglicko2.Player.new(1.2, 1.7, 0.06)
+      ...> ]
+      ...> team_two = [
+      ...>   Exglicko2.Player.new(-0.6, 0.2, 0.06),
+      ...>   Exglicko2.Player.new(0.3, 0.6, 0.06),
+      ...>   Exglicko2.Player.new(1.2, 1.7, 0.06)
+      ...> ]
+      ...> results = [
+      ...>   {team_two, 1}
+      ...> ]
+      ...> Exglicko2.Player.update_team(team_one, results)
+      [
+        %Exglicko2.Player{
+          rating: -0.5727225148150104,
+          deviation: 0.20801152963424144,
+          volatility: 0.05999777767142373
+        },
+        %Exglicko2.Player{
+          rating: 0.45366492480429327,
+          deviation: 0.581562104768686,
+          volatility: 0.059997452826507966
+        },
+        %Exglicko2.Player{
+          rating: 1.7340823171025699,
+          deviation: 1.3854013493398154,
+          volatility: 0.05999869242065375
+        }
+      ]
+  """
+  def update_team(team, results, opts \\ []) when is_list(team) do
+    system_constant = Keyword.get(opts, :tau, 0.5)
+
+    if not is_number(system_constant) or system_constant < 0.4 or system_constant > 1.2 do
+      raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect system_constant}"
+    end
+
+    results =
+      Enum.map(results, fn {opponents, result} ->
+        {composite(opponents), result}
+      end)
+
+    Enum.map(team, fn player ->
+      update_single_player(player, results, system_constant)
+    end)
+  end
+
+  defp update_single_player(%__MODULE__{deviation: deviation} = player, results, system_constant) do
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)
 
