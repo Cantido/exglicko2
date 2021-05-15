@@ -76,8 +76,8 @@ defmodule Exglicko2 do
   Game results are batched into a list of tuples, with the first element being the opponent's values,
   and the second being the resulting score between zero and one.
 
-  Also requires a system constant, which governs how much ratings are allowed to change.
-  This value must be between 0.4 and 1.2
+  You can also specify a system constant, called `:tau`, which governs how much ratings are allowed to change.
+  This value must be between 0.4 and 1.2, and the default is 0.5.
 
   ## Example
 
@@ -89,16 +89,17 @@ defmodule Exglicko2 do
   The result is that the player's score drops to -0.2, their deviation drops to 0.9, and their volatility drops slightly.
 
       iex> player = Exglicko2.new(0.0, 1.2, 0.06)
-      iex> system_constant = 0.5
       iex> results = [
       ...>   {Exglicko2.new(-0.6, 0.2, 0), 1},
       ...>   {Exglicko2.new(0.3, 0.6, 0), 0},
       ...>   {Exglicko2.new(1.2, 1.7, 0), 0}
       ...> ]
-      iex> Exglicko2.update_rating(player, results, system_constant)
+      iex> Exglicko2.update_rating(player, results, tau: 0.5)
       %Exglicko2.Rating{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
   """
-  def update_rating(%Rating{deviation: deviation} = player, results, system_constant) do
+  def update_rating(%Rating{deviation: deviation} = player, results, opts \\ []) do
+    system_constant = Keyword.get(opts, :tau, 0.5)
+
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)
 
