@@ -3,9 +3,9 @@ defmodule Exglicko2 do
   Tools for working with Glicko-2 ratings.
 
   Players are represented by a `Exglicko2.Player` struct.
-  You can get a new, default struct with the `new/0` function.
+  You can get a new, default struct with the `new_player/0` function.
 
-      iex> Exglicko2.Player.new()
+      iex> Exglicko2.new_player()
       %Exglicko2.Player{rating: 0.0, deviation: 2.0, volatility: 0.06}
 
   Once your players have ratings, the games can begin!
