@@ -13,8 +13,7 @@ defmodule Exglicko2Test do
       {Exglicko2.Player.from_glicko(opp), score}
     end)
 
-
-    {rating, deviation, volatility} = Exglicko2.Player.update_rating(player, results) |> Exglicko2.Player.to_glicko()
+    {rating, deviation, volatility} = Exglicko2.update_player(player, results) |> Exglicko2.Player.to_glicko()
 
     assert_in_delta 1464.06, rating, 0.01
     assert_in_delta 151.52, deviation, 0.01
@@ -23,14 +22,14 @@ defmodule Exglicko2Test do
 
   test "updating two teams from a single match" do
     team_one = [
-      Exglicko2.Player.new(0.6, 0.2, 0.06),
-      Exglicko2.Player.new(-0.3, 0.6, 0.06),
-      Exglicko2.Player.new(-1.2, 1.7, 0.06)
+      Exglicko2.new_player(0.6, 0.2, 0.06),
+      Exglicko2.new_player(-0.3, 0.6, 0.06),
+      Exglicko2.new_player(-1.2, 1.7, 0.06)
     ]
     team_two = [
-      Exglicko2.Player.new(-0.6, 0.2, 0.06),
-      Exglicko2.Player.new(0.3, 0.6, 0.06),
-      Exglicko2.Player.new(1.2, 1.7, 0.06)
+      Exglicko2.new_player(-0.6, 0.2, 0.06),
+      Exglicko2.new_player(0.3, 0.6, 0.06),
+      Exglicko2.new_player(1.2, 1.7, 0.06)
     ]
 
     team_one_results = [
@@ -41,8 +40,8 @@ defmodule Exglicko2Test do
       {team_one, 0}
     ]
 
-    updated_team_one = Exglicko2.Player.update_team(team_one, team_one_results)
-    updated_team_two = Exglicko2.Player.update_team(team_two, team_two_results)
+    updated_team_one = Exglicko2.update_team(team_one, team_one_results)
+    updated_team_two = Exglicko2.update_team(team_two, team_two_results)
 
     assert updated_team_one == [
       %Exglicko2.Player{rating: 0.616975738293235, deviation: 0.20788908025514855, volatility: 0.05999748464208987},
