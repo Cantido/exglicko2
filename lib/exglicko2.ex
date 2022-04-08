@@ -2,11 +2,11 @@ defmodule Exglicko2 do
   @moduledoc """
   Tools for working with Glicko-2 ratings.
 
-  Players are represented by a `Exglicko2.Player` struct.
+  Players are represented by a `Exglicko2.Rating` struct.
   You can get a new, default struct with the `new_player/0` function.
 
       iex> Exglicko2.new_player()
-      %Exglicko2.Player{rating: 0.0, deviation: 2.0, volatility: 0.06}
+      %Exglicko2.Rating{value: 0.0, deviation: 2.0, volatility: 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,
@@ -18,14 +18,14 @@ defmodule Exglicko2 do
   This function also accepts an optional system constant, which governs how much ratings are allowed to change.
   This value must be between 0.4 and 1.2, and is 0.5 by default.
 
-      iex> player = Exglicko2.Player.new(0.0, 1.2, 0.06)
+      iex> player = Exglicko2.Rating.new(0.0, 1.2, 0.06)
       iex> results = [
       ...>   {Exglicko2.new_player(-0.6, 0.2, 0), 1},
       ...>   {Exglicko2.new_player(0.3, 0.6, 0), 0},
       ...>   {Exglicko2.new_player(1.2, 1.7, 0), 0}
       ...> ]
       iex> Exglicko2.update_player(player, results, tau: 0.5)
-      %Exglicko2.Player{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
+      %Exglicko2.Rating{value: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
 
   Here is some guidance on the optimal number of games to pass into the `update_rating/3` function,
   directly from the original paper:
@@ -35,26 +35,26 @@ defmodule Exglicko2 do
   > The length of time for a rating period is at the discretion of the administrator.
 
   If you use the older Glicko rating system,
-  you can convert a player back-and-forth using the `Exglicko2.Player.from_glicko/1` and `Exglicko2.Player.to_glicko/1` functions.
+  you can convert a player back-and-forth using the `Exglicko2.Rating.from_glicko/1` and `Exglicko2.Rating.to_glicko/1` functions.
 
-      iex> Exglicko2.Player.from_glicko({1500.0, 350, 0.06})
-      %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+      iex> Exglicko2.Rating.from_glicko({1500.0, 350, 0.06})
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
 
-  alias Exglicko2.Player
+  alias Exglicko2.Rating
 
   @doc """
   Create a new player with a default rating.
   """
   def new_player do
-    Player.new()
+    Rating.new()
   end
 
   @doc """
   Create a new player with the given rating.
   """
   def new_player(rating, deviation, volatility) do
-    Player.new(rating, deviation, volatility)
+    Rating.new(rating, deviation, volatility)
   end
 
   @doc """
@@ -76,23 +76,23 @@ defmodule Exglicko2 do
 
   The result is that the player's score drops to -0.2, their deviation drops to 0.9, and their volatility drops slightly.
 
-      iex> player = Exglicko2.Player.new(0.0, 1.2, 0.06)
+      iex> player = Exglicko2.Rating.new(0.0, 1.2, 0.06)
       iex> results = [
-      ...>   {Exglicko2.Player.new(-0.6, 0.2, 0.06), 1},
-      ...>   {Exglicko2.Player.new(0.3, 0.6, 0.06), 0},
-      ...>   {Exglicko2.Player.new(1.2, 1.7, 0.06), 0}
+      ...>   {Exglicko2.Rating.new(-0.6, 0.2, 0.06), 1},
+      ...>   {Exglicko2.Rating.new(0.3, 0.6, 0.06), 0},
+      ...>   {Exglicko2.Rating.new(1.2, 1.7, 0.06), 0}
       ...> ]
       iex> Exglicko2.update_player(player, results, tau: 0.5)
-      %Exglicko2.Player{rating: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
+      %Exglicko2.Rating{value: -0.21522518921916625, deviation: 0.8943062104659615, volatility: 0.059995829968027437}
   """
-  def update_player(%Player{} = player, results, opts \\ []) do
+  def update_player(%Rating{} = player, results, opts \\ []) do
     system_constant = Keyword.get(opts, :tau, 0.5)
 
     if not is_number(system_constant) or system_constant < 0.4 or system_constant > 1.2 do
       raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect system_constant}"
     end
 
-    Player.update_rating(player, results, system_constant)
+    Rating.update_rating(player, results, system_constant)
   end
 
   @doc """
@@ -115,18 +115,18 @@ defmodule Exglicko2 do
       ...> ]
       ...> Exglicko2.update_team(team_one, results)
       [
-        %Exglicko2.Player{
-          rating: -0.5727225148150104,
+        %Exglicko2.Rating{
+          value: -0.5727225148150104,
           deviation: 0.20801152963424144,
           volatility: 0.05999777767142373
         },
-        %Exglicko2.Player{
-          rating: 0.45366492480429327,
+        %Exglicko2.Rating{
+          value: 0.45366492480429327,
           deviation: 0.581562104768686,
           volatility: 0.059997452826507966
         },
-        %Exglicko2.Player{
-          rating: 1.7340823171025699,
+        %Exglicko2.Rating{
+          value: 1.7340823171025699,
           deviation: 1.3854013493398154,
           volatility: 0.05999869242065375
         }
@@ -135,7 +135,7 @@ defmodule Exglicko2 do
   def update_team(team, results, opts \\ []) when is_list(team) do
     results =
       Enum.map(results, fn {opponents, result} ->
-        {Player.composite(opponents), result}
+        {Rating.composite(opponents), result}
       end)
 
     Enum.map(team, fn player ->

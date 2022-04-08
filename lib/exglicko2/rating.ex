@@ -1,7 +1,7 @@
-defmodule Exglicko2.Player do
+defmodule Exglicko2.Rating do
   @moduledoc """
-  A single entity that can take part in a game.
-  Players have a `:rating`, `:deviation`, and `:volatility`.
+  A Glicko-2 rating.
+  Ratings have a `:value`, `:deviation`, and `:volatility`.
   """
 
   @e 2.71828182845904523536028747135266249775724709369995
@@ -10,48 +10,48 @@ defmodule Exglicko2.Player do
   @unrated_glicko_rating 1500
 
   @enforce_keys [
-    :rating,
+    :value,
     :deviation,
     :volatility
   ]
   defstruct [
-    :rating,
+    :value,
     :deviation,
     :volatility
   ]
 
   @doc """
-  Returns a new `Exglicko2.Player` suited to new players.
+  Returns a new `Exglicko2.Rating` suited to new players.
   """
   def new do
     %__MODULE__{
-      rating: 0.0,
+      value: 0.0,
       deviation: 2.0,
       volatility: 0.06
     }
   end
 
   @doc """
-  Returns a new `Exglicko2.Player` with the given values.
+  Returns a new `Exglicko2.Rating` with the given values.
   """
   def new(rating, deviation, volatility) do
     %__MODULE__{
-      rating: rating,
+      value: rating,
       deviation: deviation,
       volatility: volatility
     }
   end
 
   @doc """
-  Get the first-generation Glicko rating of a player.
+  Convert a rating to its first-generation Glicko equivalent.
 
   ## Examples
 
-      iex> Exglicko2.Player.new(0.0, 1.2, 0.06)
-      ...> |> Exglicko2.Player.to_glicko()
+      iex> Exglicko2.Rating.new(0.0, 1.2, 0.06)
+      ...> |> Exglicko2.Rating.to_glicko()
       {1500.0, 208.46136, 0.06}
   """
-  def to_glicko(%__MODULE__{rating: rating, deviation: deviation, volatility: volatility}) do
+  def to_glicko(%__MODULE__{value: rating, deviation: deviation, volatility: volatility}) do
     {
       @glicko_conversion_factor * rating + @unrated_glicko_rating,
       deviation * @glicko_conversion_factor,
@@ -60,39 +60,36 @@ defmodule Exglicko2.Player do
   end
 
   @doc """
-  Creates a player from a first-generation Glicko rating.
+  Build a new rating from first-generation Glicko rating values.
 
   ## Examples
 
-      iex> Exglicko2.Player.from_glicko({1500.0, 350, 0.06})
-      %Exglicko2.Player{rating: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+      iex> Exglicko2.Rating.from_glicko({1500.0, 350, 0.06})
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
   """
-  def from_glicko({rating, deviation, volatility}) do
+  def from_glicko({value, deviation, volatility}) do
     new(
-      (rating - @unrated_glicko_rating)/@glicko_conversion_factor,
+      (value - @unrated_glicko_rating)/@glicko_conversion_factor,
       deviation/@glicko_conversion_factor,
       volatility
     )
   end
 
   @doc """
-  Creates a "composite player" from the given enumerable of ratings.
-  The resulting player will have a rating, deviation, and volatility that is the average of all given players.
-
-  Also accepts a single player, in which case that player is returned.
+  Creates a rating with a value, deviation, and volatility that is the average of all given ratings.
   """
-  def composite(players)
+  def composite(ratings)
 
-  def composite(players) when is_list(players) do
+  def composite(ratings) when is_list(ratings) do
     %__MODULE__{
-      rating: Enum.map(players, & &1.rating) |> mean(),
-      deviation: Enum.map(players, & &1.deviation) |> mean(),
-      volatility: Enum.map(players, & &1.volatility) |> mean()
+      value: Enum.map(ratings, & &1.value) |> mean(),
+      deviation: Enum.map(ratings, & &1.deviation) |> mean(),
+      volatility: Enum.map(ratings, & &1.volatility) |> mean()
     }
   end
 
-  def composite(%__MODULE__{} = player) do
-    player
+  def composite(%__MODULE__{} = rating) do
+    rating
   end
 
   defp mean(values) when is_list(values) do
@@ -113,18 +110,18 @@ defmodule Exglicko2.Player do
     new(new_rating, new_deviation, new_volatility)
   end
 
-  defp new_rating(%__MODULE__{rating: rating}, results, new_deviation) do
+  defp new_rating(%__MODULE__{value: rating}, results, new_deviation) do
     sum_term =
       results
       |> Enum.map(fn {opponent, score} ->
-        g(opponent.deviation) * (score - e(rating, opponent.rating, opponent.deviation))
+        g(opponent.deviation) * (score - e(rating, opponent.value, opponent.deviation))
       end)
       |> Enum.sum()
 
     rating + square(new_deviation) * sum_term
   end
 
-  defp new_volatility(%__MODULE__{rating: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
+  defp new_volatility(%__MODULE__{value: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
     f = &new_volatility_inner_template(&1, rating, deviation, player_variance, volatility, system_constant)
 
     starting_lower_bound = ln(square(volatility))
@@ -175,18 +172,18 @@ defmodule Exglicko2.Player do
 
   defp improvement(player, results) do
     sum = Enum.map(results, fn {opponent, score} ->
-      g(opponent.deviation) * (score - e(player.rating, opponent.rating, opponent.deviation))
+      g(opponent.deviation) * (score - e(player.value, opponent.value, opponent.deviation))
     end)
     |> Enum.sum()
 
     sum * variance(player, results)
   end
 
-  defp variance(%__MODULE__{rating: rating}, results) do
+  defp variance(%__MODULE__{value: rating}, results) do
     sum = Enum.map(results, fn {opponent, _score} ->
       square(g(opponent.deviation)) *
-        e(rating, opponent.rating, opponent.deviation) *
-        (1 - e(rating, opponent.rating, opponent.deviation))
+        e(rating, opponent.value, opponent.deviation) *
+        (1 - e(rating, opponent.value, opponent.deviation))
     end)
     |> Enum.sum()
 
