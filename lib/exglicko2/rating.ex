@@ -154,7 +154,7 @@ defmodule Exglicko2.Rating do
         end
       )
       |> Stream.drop_while(fn {a, b, _f_a, _f_b} ->
-        abs(b - a) > @convergence_tolerance
+        abs(b - a) >= @convergence_tolerance
       end)
       |> Enum.at(0)
       |> elem(0)
