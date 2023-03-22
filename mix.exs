@@ -5,7 +5,7 @@ defmodule Exglicko2.MixProject do
     [
       app: :exglicko2,
       description: "An implementation of the Glicko-2 rating system.",
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       package: package(),
