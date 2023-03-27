@@ -6,7 +6,10 @@ defmodule Exglicko2 do
   You can get a new, default struct with the `new_player/0` function.
 
       iex> Exglicko2.new_player()
-      %Exglicko2.Rating{value: 0.0, deviation: 2.0, volatility: 0.06}
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+
+      iex> Exglicko2.new_player() |> Exglicko2.Rating.to_glicko
+      {1500.0, 350.0, 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,
@@ -39,6 +42,15 @@ defmodule Exglicko2 do
 
       iex> Exglicko2.Rating.from_glicko({1500.0, 350, 0.06})
       %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+
+  If a player has not played during the period, his deviation can be updated. This will indicate, that since he
+  did not play, his score has become less reliable. This operation will increase the deviation without change the
+  score value.
+
+      iex(1)> player = Exglicko2.new_player()
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+      iex(2)> player |> Exglicko2.update_player([])
+      %Exglicko2.Rating{value: 0.0, deviation: 2.015655080250959, volatility: 0.06}
   """
 
   alias Exglicko2.Rating
@@ -89,7 +101,7 @@ defmodule Exglicko2 do
     system_constant = Keyword.get(opts, :tau, 0.5)
 
     if not is_number(system_constant) or system_constant < 0.4 or system_constant > 1.2 do
-      raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect system_constant}"
+      raise "System constant must be a number between 0.4 and 1.2, but it was #{inspect(system_constant)}"
     end
 
     Rating.update_rating(player, results, system_constant)

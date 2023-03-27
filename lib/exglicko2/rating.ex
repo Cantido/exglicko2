@@ -22,11 +22,13 @@ defmodule Exglicko2.Rating do
 
   @doc """
   Returns a new `Exglicko2.Rating` suited to new players.
+
+  This translates to Glicko1 standard values of {1500, 350, 0.06}
   """
   def new do
     %__MODULE__{
       value: 0.0,
-      deviation: 2.0,
+      deviation: 2.014761872416068,
       volatility: 0.06
     }
   end
@@ -69,8 +71,8 @@ defmodule Exglicko2.Rating do
   """
   def from_glicko({value, deviation, volatility}) do
     new(
-      (value - @unrated_glicko_rating)/@glicko_conversion_factor,
-      deviation/@glicko_conversion_factor,
+      (value - @unrated_glicko_rating) / @glicko_conversion_factor,
+      deviation / @glicko_conversion_factor,
       volatility
     )
   end
@@ -96,6 +98,16 @@ defmodule Exglicko2.Rating do
     Enum.sum(values) / Enum.count(values)
   end
 
+  def update_rating(
+        %__MODULE__{value: rating, deviation: deviation, volatility: volatility} = _player,
+        [],
+        _system_constant
+      ) do
+    # Updating rating after a period with no result. This will note change
+    # rating, but increase deviation, meaning rating of player is less reliable.
+    new(rating, :math.sqrt(:math.pow(volatility, 2) + :math.pow(deviation, 2)), volatility)
+  end
+
   def update_rating(%__MODULE__{deviation: deviation} = player, results, system_constant) do
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)
@@ -103,7 +115,7 @@ defmodule Exglicko2.Rating do
     new_volatility = new_volatility(player, player_variance, player_improvement, system_constant)
     new_pre_rating_deviation = :math.sqrt(square(deviation) + square(new_volatility))
 
-    new_deviation = 1 / :math.sqrt((1/square(new_pre_rating_deviation)) + (1 / player_variance))
+    new_deviation = 1 / :math.sqrt(1 / square(new_pre_rating_deviation) + 1 / player_variance)
 
     new_rating = new_rating(player, results, new_deviation)
 
@@ -121,18 +133,33 @@ defmodule Exglicko2.Rating do
     rating + square(new_deviation) * sum_term
   end
 
-  defp new_volatility(%__MODULE__{value: rating, deviation: deviation, volatility: volatility}, player_variance, player_improvement, system_constant) do
-    f = &new_volatility_inner_template(&1, rating, deviation, player_variance, volatility, system_constant)
+  defp new_volatility(
+         %__MODULE__{value: rating, deviation: deviation, volatility: volatility},
+         player_variance,
+         player_improvement,
+         system_constant
+       ) do
+    f =
+      &new_volatility_inner_template(
+        &1,
+        rating,
+        deviation,
+        player_variance,
+        volatility,
+        system_constant
+      )
 
     starting_lower_bound = ln(square(volatility))
+
     starting_upper_bound =
-      if square(player_improvement) > (square(volatility) + player_variance) do
+      if square(player_improvement) > square(volatility) + player_variance do
         ln(square(player_improvement) - square(volatility) - player_variance)
       else
         k =
           Stream.iterate(1, &(&1 + 1))
           |> Stream.drop_while(&(f.(starting_lower_bound - &1 * system_constant) < 0))
           |> Enum.at(0)
+
         starting_lower_bound - k * system_constant
       end
 
@@ -143,13 +170,13 @@ defmodule Exglicko2.Rating do
       Stream.iterate(
         {starting_lower_bound, starting_upper_bound, f_a, f_b},
         fn {a, b, f_a, f_b} ->
-          c = a + ((a - b) * f_a / (f_b - f_a))
+          c = a + (a - b) * f_a / (f_b - f_a)
           f_c = f.(c)
 
-          if (f_c * f_b) < 0 do
+          if f_c * f_b < 0 do
             {b, c, f_b, f_c}
           else
-            {a, c, f_a/2, f_c}
+            {a, c, f_a / 2, f_c}
           end
         end
       )
@@ -167,25 +194,27 @@ defmodule Exglicko2.Rating do
     numerator = exp(x) * (square(delta) - square(phi) - v - exp(x))
     denominator = 2 * square(square(phi) + v + exp(x))
 
-    (numerator / denominator) - ((x - a) / square(tau))
+    numerator / denominator - (x - a) / square(tau)
   end
 
   defp improvement(player, results) do
-    sum = Enum.map(results, fn {opponent, score} ->
-      g(opponent.deviation) * (score - e(player.value, opponent.value, opponent.deviation))
-    end)
-    |> Enum.sum()
+    sum =
+      Enum.map(results, fn {opponent, score} ->
+        g(opponent.deviation) * (score - e(player.value, opponent.value, opponent.deviation))
+      end)
+      |> Enum.sum()
 
     sum * variance(player, results)
   end
 
   defp variance(%__MODULE__{value: rating}, results) do
-    sum = Enum.map(results, fn {opponent, _score} ->
-      square(g(opponent.deviation)) *
-        e(rating, opponent.value, opponent.deviation) *
-        (1 - e(rating, opponent.value, opponent.deviation))
-    end)
-    |> Enum.sum()
+    sum =
+      Enum.map(results, fn {opponent, _score} ->
+        square(g(opponent.deviation)) *
+          e(rating, opponent.value, opponent.deviation) *
+          (1 - e(rating, opponent.value, opponent.deviation))
+      end)
+      |> Enum.sum()
 
     1 / sum
   end
@@ -195,7 +224,7 @@ defmodule Exglicko2.Rating do
   end
 
   defp g(phi) do
-    1/:math.sqrt(1 + (3 * square(phi) / square(pi())))
+    1 / :math.sqrt(1 + 3 * square(phi) / square(pi()))
   end
 
   defp ln(x) do
