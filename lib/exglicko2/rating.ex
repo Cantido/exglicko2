@@ -98,6 +98,16 @@ defmodule Exglicko2.Rating do
     Enum.sum(values) / Enum.count(values)
   end
 
+  def update_rating(
+        %__MODULE__{value: rating, deviation: deviation, volatility: volatility} = _player,
+        [],
+        _system_constant
+      ) do
+    # Updating rating after a period with no result. This will note change
+    # rating, but increase deviation, meaning rating of player is less reliable.
+    new(rating, :math.sqrt(:math.pow(volatility, 2) + :math.pow(deviation, 2)), volatility)
+  end
+
   def update_rating(%__MODULE__{deviation: deviation} = player, results, system_constant) do
     player_variance = variance(player, results)
     player_improvement = improvement(player, results)

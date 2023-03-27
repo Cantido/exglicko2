@@ -42,6 +42,15 @@ defmodule Exglicko2 do
 
       iex> Exglicko2.Rating.from_glicko({1500.0, 350, 0.06})
       %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+
+  If a player has not played during the period, his deviation can be updated. This will indicate, that since he
+  did not play, his score has become less reliable. This operation will increase the deviation without change the
+  score value.
+
+      iex(1)> player = Exglicko2.new_player()
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+      iex(2)> player |> Exglicko2.update_player([])
+      %Exglicko2.Rating{value: 0.0, deviation: 2.015655080250959, volatility: 0.06}
   """
 
   alias Exglicko2.Rating
