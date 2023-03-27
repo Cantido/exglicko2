@@ -6,7 +6,10 @@ defmodule Exglicko2 do
   You can get a new, default struct with the `new_player/0` function.
 
       iex> Exglicko2.new_player()
-      %Exglicko2.Rating{value: 0.0, deviation: 2.0, volatility: 0.06}
+      %Exglicko2.Rating{value: 0.0, deviation: 2.014761872416068, volatility: 0.06}
+
+      iex> Exglicko2.new_player() |> Exglicko2.Rating.to_glicko
+      {1500.0, 350.0, 0.06}
 
   Once your players have ratings, the games can begin!
   Game results are represented by a number ranging from zero to one,

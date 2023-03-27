@@ -22,11 +22,13 @@ defmodule Exglicko2.Rating do
 
   @doc """
   Returns a new `Exglicko2.Rating` suited to new players.
+
+  This translates to Glicko1 standard values of {1500, 350, 0.06}
   """
   def new do
     %__MODULE__{
       value: 0.0,
-      deviation: 2.0,
+      deviation: 2.014761872416068,
       volatility: 0.06
     }
   end
